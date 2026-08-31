@@ -1,0 +1,27 @@
+[
+  {
+    "id": 1,
+    "query": "What are the foreclosure charges for a personal loan after 1 year?",
+    "description": "Valid policy query - Foreclosure Policy"
+  },
+  {
+    "id": 2,
+    "query": "What income documents do I need to submit for a salaried personal loan?",
+    "description": "Valid policy query - Personal Loan Documentation"
+  },
+  {
+    "id": 3,
+    "query": "Does IIFL Finance offer loans against cryptocurrency or Bitcoin?",
+    "description": "Out-of-scope / Unsupported query (Requires Escalation)"
+  },
+  {
+    "id": 4,
+    "query": "Hi there! Good morning, can you tell me what services you provide?",
+    "description": "General conversation / greeting"
+  },
+  {
+    "id": 5,
+    "query": "",
+    "description": "Edge case - empty input"
+  }
+]
