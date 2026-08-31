@@ -70,12 +70,23 @@ st.markdown("""
         font-weight: 600;
         font-size: 0.85rem;
     }
-    .card {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
+    .supported-box {
+        background-color: #F0FDF4;
+        border: 1px solid #BBF7D0;
         border-radius: 8px;
         padding: 16px;
-        margin-bottom: 12px;
+        margin-bottom: 20px;
+    }
+    .format-badge {
+        background-color: #DCFCE7;
+        color: #166534;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-block;
+        margin-right: 6px;
+        margin-bottom: 6px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -125,14 +136,21 @@ with st.sidebar:
 
 
 # Initialize Agent
-agent = CustomerSupportAgent(policy_dir="data/policies", api_key=effective_api_key if effective_api_key else None)
+policies_dir = "data/policies"
+os.makedirs(policies_dir, exist_ok=True)
+agent = CustomerSupportAgent(policy_dir=policies_dir, api_key=effective_api_key if effective_api_key else None)
 
 # Main Title Area
 st.markdown('<div class="main-header">🏦 IIFL Finance Support Agent</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">Policy-Aware Customer Query Resolution & Automated Escalation Engine</div>', unsafe_allow_html=True)
 
 # Tabs
-tab1, tab2, tab3 = st.tabs(["💬 Query & Chat Tester", "⚡ 1-Click Batch Evaluation", "📚 Policy Documents Explorer"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "💬 Query & Chat Tester", 
+    "➕ Upload Custom Policies", 
+    "⚡ 1-Click Batch Evaluation", 
+    "📚 Policy Documents Explorer"
+])
 
 
 # TAB 1: Query Tester
@@ -147,7 +165,8 @@ with tab1:
         "What is the minimum gold purity required for an IIFL Gold Loan?",
         "Does IIFL Finance offer loans against cryptocurrency or Bitcoin?",
         "Hi there! Good morning, can you tell me what services you provide?",
-        "Can I part-prepay my gold loan before the tenure ends?"
+        "Can I part-prepay my gold loan before the tenure ends?",
+        "Looking for charges info if I pay in let's say 18 months time my loan"
     ]
     
     selected_sample = st.selectbox("Quick Preset Questions:", sample_options)
@@ -182,7 +201,6 @@ with tab1:
             # Action and Confidence Badges
             action_class = "badge-respond" if res_dict["action"] == "respond" else "badge-escalate"
             action_icon = "✅" if res_dict["action"] == "respond" else "⚠️"
-            
             conf_class = f"badge-{res_dict['confidence']}"
 
             st.markdown(f"""
@@ -194,7 +212,6 @@ with tab1:
             """, unsafe_allow_html=True)
 
             st.info(res_dict["answer"])
-
             st.markdown(f"**📖 Source Citation:** `{res_dict['source']}`")
 
         with col_right:
@@ -202,8 +219,48 @@ with tab1:
             st.json(res_dict)
 
 
-# TAB 2: Batch Evaluation
+# TAB 2: Upload Custom Policies
 with tab2:
+    st.subheader("Upload Custom Policy Documents")
+    st.markdown("Add your own company policy circulars, FAQs, or rate sheets to the agent's knowledge base in real-time.")
+
+    # Allowed Document Formats Box
+    st.markdown("""
+    <div class="supported-box">
+        <h4 style="margin: 0 0 10px 0; color: #166534;">📋 Allowed Policy Document Types</h4>
+        <div>
+            <span class="format-badge">📄 Markdown (.md, .txt)</span>
+            <span class="format-badge">📑 PDF Documents (.pdf)</span>
+            <span class="format-badge">📊 PowerPoint Slides (.pptx, .ppt)</span>
+            <span class="format-badge">📦 Structured JSON (.json)</span>
+        </div>
+        <p style="margin: 10px 0 0 0; color: #374151; font-size: 0.88rem;">
+            Uploaded files will be immediately parsed, chunked, and indexed by the Policy Retriever. You can then immediately switch to the <b>Query & Chat Tester</b> tab and ask questions grounded in your uploaded documents!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    uploaded_files = st.file_uploader(
+        "Choose policy document files to upload:",
+        type=["pdf", "pptx", "ppt", "json", "md", "txt"],
+        accept_multiple_files=True
+    )
+
+    if uploaded_files:
+        if st.button("📥 Save & Index Documents", type="primary"):
+            added_count = 0
+            for uploaded_file in uploaded_files:
+                save_path = os.path.join(policies_dir, uploaded_file.name)
+                with open(save_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                added_count += 1
+
+            st.success(f"✅ Successfully uploaded and indexed {added_count} document(s)! You can now ask questions about them in the Query tab.")
+            st.rerun()
+
+
+# TAB 3: Batch Evaluation
+with tab3:
     st.subheader("Run Batch Evaluation (5 Required Assignment Test Cases)")
     st.markdown("Evaluate all sample customer queries covering valid policy queries, greetings, out-of-scope topics, and edge cases.")
 
@@ -238,20 +295,32 @@ with tab2:
             st.error(f"Sample queries file '{queries_file}' not found.")
 
 
-# TAB 3: Policy Documents Explorer
-with tab3:
-    st.subheader("Loaded Policy & FAQ Documents")
-    st.markdown("Inspect the raw markdown policy documents currently indexed by the agent.")
+# TAB 4: Policy Documents Explorer
+with tab4:
+    st.subheader("Currently Indexed Policy & FAQ Documents")
+    st.markdown(f"Total chunks indexed in memory: **{len(agent.retriever.chunks)} sections**")
 
-    policies_dir = "data/policies"
     if os.path.exists(policies_dir):
-        policy_files = [f for f in os.listdir(policies_dir) if f.endswith(".md")]
+        policy_files = [f for f in os.listdir(policies_dir) if any(f.lower().endswith(ext) for ext in agent.retriever.ALLOWED_EXTENSIONS)]
         for pfile in sorted(policy_files):
             filepath = os.path.join(policies_dir, pfile)
-            with open(filepath, "r", encoding="utf-8") as f:
-                content = f.read()
+            ext = os.path.splitext(pfile)[1].lower()
+            
+            icon = "📄"
+            if ext == ".pdf":
+                icon = "📑"
+            elif ext in [".pptx", ".ppt"]:
+                icon = "📊"
+            elif ext == ".json":
+                icon = "📦"
 
-            with st.expander(f"📄 {pfile.replace('_', ' ').replace('.md', '').title()} (`{pfile}`)", expanded=False):
-                st.markdown(content)
+            file_size_kb = os.path.getsize(filepath) / 1024
+            
+            with st.expander(f"{icon} {pfile} ({file_size_kb:.1f} KB)", expanded=False):
+                if ext in [".md", ".txt", ".json"]:
+                    with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
+                        st.code(f.read(), language="markdown" if ext != ".json" else "json")
+                else:
+                    st.info(f"Binary document `{pfile}` parsed and indexed across pages/slides in retriever.")
     else:
         st.warning("Policies directory not found.")
