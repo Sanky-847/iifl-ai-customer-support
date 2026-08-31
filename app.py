@@ -87,7 +87,15 @@ with st.sidebar:
     st.title("IIFL AI Agent Settings")
     
     st.markdown("### 🔑 LLM Configuration")
-    env_api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY", "")
+    # Support environment variables, .env, and Streamlit secrets
+    secret_key = ""
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            secret_key = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
+
+    env_api_key = os.getenv("GEMINI_API_KEY") or secret_key or os.getenv("GOOGLE_API_KEY", "")
     api_key_input = st.text_input(
         "Gemini API Key (Optional)",
         value=env_api_key,
@@ -96,7 +104,7 @@ with st.sidebar:
     )
     
     if api_key_input:
-        st.success("🟢 LLM Mode: Gemini 2.5 Flash Enabled")
+        st.success("🟢 LLM Mode: Gemini 3.6 Flash Enabled")
     else:
         st.info("🟡 Mode: Local Grounded Fallback (Offline)")
 
