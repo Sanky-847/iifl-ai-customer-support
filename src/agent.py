@@ -146,7 +146,7 @@ class CustomerSupportAgent:
         )
 
         prompt = f"Customer Query: {query}"
-        candidate_models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash"]
+        candidate_models = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.7-flash"]
 
         last_err = None
         for model_name in candidate_models:
