@@ -124,12 +124,8 @@ with st.sidebar:
     st.caption("IIFL Finance AI Engineer Round 1 Prototype")
 
 
-# Initialize Agent in Session State
-@st.cache_resource
-def get_agent(api_key: str):
-    return CustomerSupportAgent(policy_dir="data/policies", api_key=api_key if api_key else None)
-
-agent = get_agent(effective_api_key if effective_api_key else None)
+# Initialize Agent
+agent = CustomerSupportAgent(policy_dir="data/policies", api_key=effective_api_key if effective_api_key else None)
 
 # Main Title Area
 st.markdown('<div class="main-header">🏦 IIFL Finance Support Agent</div>', unsafe_allow_html=True)
