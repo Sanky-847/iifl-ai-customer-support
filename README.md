@@ -7,12 +7,12 @@ A lightweight, policy-aware AI customer support prototype for IIFL Finance. It r
 ---
 
 ## 1. How does your solution work?
-Our solution loads markdown policy documents dynamically from `data/policies/` and splits them into section-level chunks on startup. When a customer query is received, it first checks for edge cases (empty input) and general conversation (greetings). Next, it computes TF-IDF vector similarity to retrieve the most relevant policy section. Finally, it generates a response grounded strictly in the retrieved policy text (using Gemini 3.6 Flash LLM or a deterministic grounded generator fallback) and formats the output into a standardized JSON schema containing the query, category, answer, source citation, confidence level, and recommended action (`respond` or `escalate`).
+My solution loads policy documents dynamically from `data/policies/` (supporting Markdown, PDF, PPTX, and JSON) and splits them into section-level chunks on startup. When a customer query is received, it first checks for edge cases (empty input) and general conversation (greetings). Next, it computes TF-IDF vector similarity to retrieve the most relevant policy section. Finally, it generates a response grounded strictly in the retrieved policy text (using Gemini 3.6 Flash LLM or a deterministic grounded generator fallback) and formats the output into a standardized JSON schema containing the query, category, answer, source citation, confidence level, and recommended action (`respond` or `escalate`).
 
 ---
 
 ## 2. Why did you choose this model / framework / approach?
-We chose a lightweight RAG pipeline with TF-IDF cosine similarity and Pydantic structured output instead of a complex vector database or heavy framework. This approach avoids unnecessary infrastructure overhead for small document sets, guarantees sub-second retrieval speed, and ensures strict adherence to the output schema. Using Gemini 3.6 Flash with fallback logic ensures high grounding accuracy and resilience even when offline.
+I chose a lightweight RAG pipeline with TF-IDF cosine similarity and Pydantic structured output instead of a complex vector database or heavy framework. This approach avoids unnecessary infrastructure overhead for small document sets, guarantees sub-second retrieval speed, and ensures strict adherence to the output schema. Using Gemini 3.6 Flash with fallback logic ensures high grounding accuracy and resilience even when offline.
 
 ---
 
@@ -31,7 +31,7 @@ A critical security and governance concern is **Data Privacy and PII Protection 
 ---
 
 ## 5. What AI coding tools did you use, and how did you use them?
-We utilized **Antigravity AI (powered by Gemini)** as an agentic pair programmer. We used it to design the system architecture, write dynamic document chunking logic, implement Pydantic structured output schemas, craft unit test suites, and draft comprehensive documentation.
+I first architected the overall system workflow, selected the tech stack (TF-IDF, Gemini 3.6 Flash, Pydantic), and outlined the user interface layout. I then leveraged **Antigravity AI (powered by Gemini)** as an AI coding assistant to scaffold the implementation, write multi-format document parsers, generate comprehensive pytest test suites, and iterate on edge-case handling.
 
 ---
 
