@@ -95,16 +95,22 @@ with st.sidebar:
     except Exception:
         pass
 
-    env_api_key = os.getenv("GEMINI_API_KEY") or secret_key or os.getenv("GOOGLE_API_KEY", "")
+    server_api_key = os.getenv("GEMINI_API_KEY") or secret_key or os.getenv("GOOGLE_API_KEY", "")
+    
     api_key_input = st.text_input(
-        "Gemini API Key (Optional)",
-        value=env_api_key,
+        "Custom Gemini API Key (Optional)",
+        value="",
         type="password",
-        help="Enter your Gemini API Key from Google AI Studio. If left blank, agent uses local deterministic grounding fallback."
+        placeholder="Enter key to override server key..." if server_api_key else "Enter Gemini API Key...",
+        help="The server already has a secure Gemini API key configured. You can optionally enter your own key here to override it."
     )
     
-    if api_key_input:
-        st.success("🟢 LLM Mode: Gemini 3.6 Flash Enabled")
+    effective_api_key = api_key_input.strip() if api_key_input.strip() else server_api_key
+
+    if effective_api_key:
+        st.success("🟢 LLM Mode: Gemini Active")
+        if not api_key_input and server_api_key:
+            st.caption("🔒 Using secure server-side key (hidden from clients)")
     else:
         st.info("🟡 Mode: Local Grounded Fallback (Offline)")
 
@@ -123,7 +129,7 @@ with st.sidebar:
 def get_agent(api_key: str):
     return CustomerSupportAgent(policy_dir="data/policies", api_key=api_key if api_key else None)
 
-agent = get_agent(api_key_input.strip() if api_key_input else None)
+agent = get_agent(effective_api_key if effective_api_key else None)
 
 # Main Title Area
 st.markdown('<div class="main-header">🏦 IIFL Finance Support Agent</div>', unsafe_allow_html=True)
