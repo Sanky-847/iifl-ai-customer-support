@@ -88,6 +88,10 @@ if __name__ == "__main__":
         pass
 
     if is_streamlit:
-        import app
+        import runpy
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        app_path = os.path.join(current_dir, "app.py")
+        runpy.run_path(app_path, run_name="__main__")
     else:
         main()
