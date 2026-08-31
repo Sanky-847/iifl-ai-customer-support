@@ -79,4 +79,15 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    is_streamlit = False
+    try:
+        import streamlit as st
+        if st.runtime.exists():
+            is_streamlit = True
+    except Exception:
+        pass
+
+    if is_streamlit:
+        import app
+    else:
+        main()
