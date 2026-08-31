@@ -134,7 +134,8 @@ class CustomerSupportAgent:
         return bool(words.intersection(out_of_scope_keywords))
 
     def _generate_llm_response(self, query: str, context: str, primary_source: str, score: float) -> SupportResponse:
-        """Invokes Gemini LLM with strict grounding instructions."""
+        """Invokes Gemini LLM with strict grounding instructions and retry logic."""
+        import time
         from google.genai import types
 
         system_instruction = (
@@ -147,19 +148,26 @@ class CustomerSupportAgent:
 
         prompt = f"Customer Query: {query}"
 
-        response = self.client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                response_schema=SupportResponse,
-                temperature=0.1
-            )
-        )
+        last_err = None
+        for attempt in range(2):
+            try:
+                response = self.client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type="application/json",
+                        response_schema=SupportResponse,
+                        temperature=0.1
+                    )
+                )
+                parsed_data = json.loads(response.text)
+                return SupportResponse(**parsed_data)
+            except Exception as e:
+                last_err = e
+                time.sleep(1.0)
 
-        parsed_data = json.loads(response.text)
-        return SupportResponse(**parsed_data)
+        raise last_err
 
     def _generate_fallback_grounded_response(self, query: str, retrieved_results) -> SupportResponse:
         """Deterministic response synthesizer used when running without API key."""
