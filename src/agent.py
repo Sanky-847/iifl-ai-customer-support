@@ -134,8 +134,7 @@ class CustomerSupportAgent:
         return bool(words.intersection(out_of_scope_keywords))
 
     def _generate_llm_response(self, query: str, context: str, primary_source: str, score: float) -> SupportResponse:
-        """Invokes Gemini LLM with strict grounding instructions and retry logic."""
-        import time
+        """Invokes Gemini LLM with multi-model fallback and strict grounding."""
         from google.genai import types
 
         system_instruction = (
@@ -147,12 +146,13 @@ class CustomerSupportAgent:
         )
 
         prompt = f"Customer Query: {query}"
+        candidate_models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-3.5-flash", "gemini-3.6-flash"]
 
         last_err = None
-        for attempt in range(2):
+        for model_name in candidate_models:
             try:
                 response = self.client.models.generate_content(
-                    model="gemini-3.6-flash",
+                    model=model_name,
                     contents=prompt,
                     config=types.GenerateContentConfig(
                         system_instruction=system_instruction,
@@ -164,8 +164,9 @@ class CustomerSupportAgent:
                 parsed_data = json.loads(response.text)
                 return SupportResponse(**parsed_data)
             except Exception as e:
+                logger.warning(f"Model {model_name} failed: {e}. Trying next candidate model.")
                 last_err = e
-                time.sleep(1.0)
+                continue
 
         raise last_err
 
