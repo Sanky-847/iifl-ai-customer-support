@@ -1,5 +1,7 @@
 # IIFL Finance - Policy-Aware Customer Support Agent
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://iifl-ai-customer-support.streamlit.app) &nbsp; **🌐 Live Interactive Demo:** [iifl-ai-customer-support.streamlit.app](https://iifl-ai-customer-support.streamlit.app)
+
 A lightweight, policy-aware AI customer support prototype for IIFL Finance. It retrieves answers from financial policy and FAQ documents, provides structured JSON output, handles general conversation/greetings, and automatically escalates queries when confidence is low or information is out-of-scope.
 
 ---
