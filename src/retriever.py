@@ -45,8 +45,9 @@ class PolicyRetriever:
         if not self.chunks:
             raise ValueError(f"No policy documents found in {self.policy_dir}")
 
-        # Build TF-IDF matrix over chunk contents
-        corpus = [f"{c.section_title}\n{c.content}" for c in self.chunks]
+        # Build TF-IDF matrix over chunk contents with document metadata
+        corpus = [f"{c.doc_name} {c.section_title} {c.doc_name}\n{c.content}" for c in self.chunks]
+        self.vectorizer = TfidfVectorizer(stop_words="english", ngram_range=(1, 2), sublinear_tf=True)
         self.tfidf_matrix = self.vectorizer.fit_transform(corpus)
 
     def _chunk_document(self, filename: str, text: str):

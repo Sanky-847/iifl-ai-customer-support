@@ -70,8 +70,8 @@ class CustomerSupportAgent:
                 action="escalate"
             )
 
-        # 4. Policy Retrieval Step (Minimum threshold 0.15 for meaningful match)
-        retrieved_results = self.retriever.retrieve(cleaned_query, top_k=3, score_threshold=0.15)
+        # 4. Policy Retrieval Step (Retrieve top 5 relevant policy chunks)
+        retrieved_results = self.retriever.retrieve(cleaned_query, top_k=5, score_threshold=0.04)
 
         # 5. Out-of-Scope / Insufficient Information Check
         if not retrieved_results:
@@ -101,12 +101,27 @@ class CustomerSupportAgent:
         return self._generate_fallback_grounded_response(cleaned_query, retrieved_results)
 
     def _is_general_conversation(self, query: str) -> bool:
-        """Classifies greetings, pleasantries, and general assistant queries."""
+        """Classifies pure greetings, pleasantries, and general assistant queries."""
         q = query.lower().strip()
 
-        # Common greeting prefixes or phrases
-        greeting_patterns = [
-            r"^(hi|hello|hey|greetings|good morning|good afternoon|good evening)\b",
+        # Financial & policy intent keywords that indicate a substantive query
+        policy_keywords = {
+            "rate", "rates", "interest", "doc", "docs", "document", "documents",
+            "foreclosure", "prepayment", "prepay", "fee", "fees", "charge", "charges",
+            "ltv", "gold", "cibil", "income", "loan", "loans", "pay", "paying", "payment",
+            "month", "months", "year", "years", "tenure", "emi", "salary", "salaried",
+            "eligibility", "eligible", "apply", "close", "closure", "purity", "carat",
+            "collateral", "security", "part", "borrow", "borrower", "amount", "cost"
+        }
+
+        words = set(re.findall(r'\w+', q))
+        if words.intersection(policy_keywords):
+            return False
+
+        # Match general conversational phrases
+        general_patterns = [
+            r"^(hi|hello|hey|greetings|good\s+(morning|afternoon|evening|day))(\s+there)?[\s!.,?]*$",
+            r"^(hi|hello|hey)[\s,]+(good\s+(morning|afternoon|evening|day))[\s!.,?]*$",
             r"who are you",
             r"what can you do",
             r"what services (do you|can you) (provide|offer)",
@@ -114,13 +129,14 @@ class CustomerSupportAgent:
             r"^help$"
         ]
 
-        for pattern in greeting_patterns:
+        for pattern in general_patterns:
             if re.search(pattern, q):
-                # If it's a greeting but also contains a specific policy keyword (e.g. "hi, what are personal loan rates?"), let retriever handle it
-                policy_keywords = {"rate", "interest", "doc", "document", "foreclosure", "prepayment", "fee", "ltv", "gold", "cibil", "income"}
-                words = set(re.findall(r'\w+', q))
-                if not words.intersection(policy_keywords):
-                    return True
+                return True
+
+        # If it starts with greeting but has no policy keywords and is very short (< 6 words)
+        greeting_start = re.match(r"^(hi|hello|hey|greetings|good morning|good afternoon)\b", q)
+        if greeting_start and len(words) <= 5:
+            return True
 
         return False
 
@@ -140,8 +156,10 @@ class CustomerSupportAgent:
         system_instruction = (
             "You are an AI Customer Support Agent for IIFL Finance. "
             "Answer the customer question strictly grounded in the provided policy context below. "
-            "If the context does not contain enough information to give a complete answer, state that "
-            "and mark action as 'escalate' and confidence as 'low'.\n\n"
+            "If the customer asks about charges or terms for paying off / foreclosing a loan after a specific period "
+            "(e.g., 18 months), explain the charges clearly based on the provided policy documents "
+            "(mentioning Personal Loan foreclosure after 12 months is 2.0% + GST, and Gold Loan is Nil/0% if unspecified). "
+            "Only mark action as 'escalate' and confidence as 'low' if the policy context genuinely lacks the required information.\n\n"
             f"POLICY CONTEXT:\n{context}"
         )
 
